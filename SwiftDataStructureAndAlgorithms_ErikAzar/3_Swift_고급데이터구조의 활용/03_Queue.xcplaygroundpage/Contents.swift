@@ -144,7 +144,7 @@ let z = queue.dequeue()
 // Optional(120)
 
 
-// ✅프로토콜
+// ✅ 프로토콜
 /*
  CustomerStringConvertible, CustomerDebugStringConvertible
  두 가지 프로토콜을 만들어서 타입 값을 출력할 때 좀 더 이해하기 쉬운 이름을 반환하도록 함
@@ -160,3 +160,74 @@ extension Queue: CustomStringConvertible, CustomDebugStringConvertible {
         return data.debugDescription
     }
 }
+
+// 시퀀스로 큐의 구조를 만듦
+public init <S: Sequence>(_ elements: S) where
+    S.Iterator.Element == T {
+    data.append(contentsOf: elements)
+}
+
+extension Queue: ExpressibleByArrayLiteral {
+    // 배열 리터럴을 통해 큐 구조를 만듦
+    public init(arrayLiteral elements: T...) {
+        self.init(elements)
+    }
+}
+
+// 📌다른 컬렉션 타입에서 그럤든, for...in 루프에서 큐를 사용할 수 있도록 준비!!
+
+extension Queue: Sequence {
+    // 이번 시퀀스를 순회하는 반복기를 반환
+    // - 복잡성: O(1).
+    public func generate() -> AnyIterator<T> {
+        AnyIterator(IndexingIterator(_elements: data.lazy))
+    }
+}
+
+// index가 지정 범위 내 값인지 확인
+private func checkIndex(index: Int) {
+    if index < 0 || index > count {
+        fatalError("Index out of range")
+    }
+}
+
+extension Queue: MutableCollection {
+    public var startIndex: Int {
+        return 0
+    }
+    
+    public var endIndex: Int {
+        return count - 1
+    }
+    
+    // 해당 인덱스의 다음 위치 값을 반환
+    public func index(after i: Int) -> Int {
+        return data.index(after: i)
+    }
+    
+    public subscript(index: Int) -> T {
+        get {
+            checkIndex(index)
+            return data[index]
+        }
+        set {
+            checkIndex(index)
+            data[index] = newValue
+        }
+    }
+}
+
+// 예제로 프로토콜 작동하는지 확인
+
+// ArrayLiteral 문법 사용
+var q1: Queue<Int> = [1,2,3,4,5]
+
+// q1에서 가져온 SequenceType을 받는 초기화 메소를 이용해서 새로운 큐를 생성
+var q2 = Queue<Int>(q1)
+
+let q1x = q1.dequeue()
+// q1x = 1
+
+q2.enqueue(55)
+// q2 = [1,2,3,4,5,55]
+
